@@ -1,4 +1,4 @@
-# ── Data & medical images ────────────────────────────────────────────────────
+# data 
 data/
 predictions/
 *.nii.gz
@@ -6,13 +6,13 @@ predictions/
 *.mha
 *.dcm
 
-# ── Model artifacts ──────────────────────────────────────────────────────────
+# checkpoints and artifacts
 checkpoints/
 *.ckpt
 *.pth
 *.pt
 
-# ── Experiment outputs ───────────────────────────────────────────────────────
+# outputs
 logs/
 outputs/
 multirun/
@@ -20,10 +20,10 @@ wandb/
 mlruns/
 .hydra/
 
-# ── Scratch / temporary files ────────────────────────────────────────────────
+# temp
 scratch/
 
-# ── Secrets & environment files ──────────────────────────────────────────────
+# env files
 .env
 .env.local
 .env.*.local
@@ -32,7 +32,7 @@ scratch/
 secrets.yaml
 secrets.json
 
-# ── Python cache ─────────────────────────────────────────────────────────────
+# cache
 __pycache__/
 *.pyc
 *.pyo
@@ -43,11 +43,11 @@ dist/
 build/
 .eggs/
 
-# ── Jupyter ──────────────────────────────────────────────────────────────────
+# jupyter
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# ── IDEs & OS ─────────────────────────────────────────────────────────────────
+# ide and os
 .DS_Store
 .idea/
 .vscode/
