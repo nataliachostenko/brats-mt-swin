@@ -1,0 +1,61 @@
+# ── Data & medical images ────────────────────────────────────────────────────
+data/
+predictions/
+*.nii.gz
+*.nii
+*.mha
+*.dcm
+
+# ── Model artifacts ──────────────────────────────────────────────────────────
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+
+# ── Experiment outputs ───────────────────────────────────────────────────────
+logs/
+outputs/
+multirun/
+wandb/
+mlruns/
+.hydra/
+
+# ── Scratch / temporary files ────────────────────────────────────────────────
+scratch/
+
+# ── Secrets & environment files ──────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets.yaml
+secrets.json
+
+# ── Python cache ─────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── IDEs & OS ─────────────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+Thumbs.db
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+env/
+venv/
+.conda/
