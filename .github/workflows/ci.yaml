@@ -22,7 +22,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install torch lightning "monai[all]" scipy hydra-core pytest flake8 scikit-learn
+        # CPU-only build: the runner has no GPU, and the default "torch" wheel
+        # otherwise pulls several GB of nvidia-*-cuXX packages that don't fit
+        # on the free runner's disk.
+        pip install torch --index-url https://download.pytorch.org/whl/cpu
+        # monai[all] pulls itk/openslide/cucim/transformers/mlflow/clearml/...
+        # none of which this repo uses; [nibabel] covers what LoadImaged needs.
+        # einops is a lazy runtime dependency of SwinUNETR, not bundled by [nibabel].
+        pip install lightning "monai[nibabel]" einops scipy hydra-core pytest flake8 scikit-learn
 
     - name: Lint with flake8
       run: flake8 src/ tests/
