@@ -1,0 +1,14 @@
+_target_: src.data.brats_datamodule.BraTSDataModule
+
+# override on the CLI (data.data_dir=/path/to/data) or set BRATS_DATA_DIR
+data_dir: ${oc.env:BRATS_DATA_DIR,./data/BraTS-GLI/extracted_data/}
+
+batch_size: 2
+num_workers: 8
+pin_memory: True
+
+roi_size: [96, 96, 96]
+num_samples_per_image: 4
+
+seed: 42
+val_split: 0.2

@@ -1,0 +1,15 @@
+defaults:
+  - _self_
+  - data: brats_gli
+  - model: swin_multitask
+  - trainer: default
+
+task_name: "brats_multitask_training"
+
+logger:
+  _target_: lightning.pytorch.loggers.WandbLogger
+  project: "brats-mgr-project"
+  name: "Swin-UNETR-CrossTask"
+  save_dir: "./logs"
+
+ckpt_path: null

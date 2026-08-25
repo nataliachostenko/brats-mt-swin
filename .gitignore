@@ -1,27 +1,27 @@
 # data 
-data/
-predictions/
+/data/
+/predictions/
 *.nii.gz
 *.nii
 *.mha
 *.dcm
 
 # checkpoints and artifacts
-checkpoints/
+/checkpoints/
 *.ckpt
 *.pth
 *.pt
 
 # outputs
-logs/
-outputs/
+/logs/
+/outputs/
 multirun/
 wandb/
 mlruns/
 .hydra/
 
 # temp
-scratch/
+/scratch/
 
 # env files
 .env
