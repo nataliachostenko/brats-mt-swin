@@ -32,7 +32,7 @@ jobs:
         pip install lightning "monai[nibabel]" einops scipy hydra-core pytest flake8 scikit-learn
 
     - name: Lint with flake8
-      run: flake8 src/ tests/
+      run: flake8 src/ tools/ tests/
 
     - name: Run tests
       run: pytest tests/

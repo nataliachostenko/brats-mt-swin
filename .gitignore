@@ -48,6 +48,7 @@ build/
 *.ipynb_checkpoints
 
 # ide and os
+cufile.log
 .DS_Store
 .idea/
 .vscode/
