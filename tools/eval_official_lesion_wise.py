@@ -15,17 +15,20 @@ import omegaconf
 import omegaconf.base
 
 torch.serialization.add_safe_globals([
-    omegaconf.listconfig.ListConfig, 
+    omegaconf.listconfig.ListConfig,
     omegaconf.dictconfig.DictConfig,
     omegaconf.base.ContainerMetadata,
     typing.Any
 ])
 
-import functools
 _original_torch_load = torch.load
+
+
 def _patched_torch_load(*args, **kwargs):
     kwargs['weights_only'] = False
     return _original_torch_load(*args, **kwargs)
+
+
 torch.load = _patched_torch_load
 
 project_root = str(Path(__file__).resolve().parent.parent)
@@ -36,22 +39,47 @@ metrics_dir = os.path.join(project_root, "tools", "BraTS2024Metrics")
 if metrics_dir not in sys.path:
     sys.path.insert(0, metrics_dir)
 
-from src.models.components.multi_task_swin import MultiTaskSwinUNETR
 from src.models.brats_module import BraTSLightningModule
+from src.models.components.base_swin import BaseSwinUNETR
+from src.models.components.multi_task_swin import MultiTaskSwinUNETR
+from src.models.components.multi_task_swin_detach import MultiTaskSwinUNETRDetach
 from monai.inferers import sliding_window_inference
 from monai.transforms import Compose, Activations, AsDiscrete
 from monai.data import decollate_batch
 
 from metrics_GLI import get_LesionWiseResults
 
+CKPT_ROOT = f"{project_root}/logs/brats-mgr-project"
+
+MODELS = {
+    "multitask": dict(
+        ckpt=f"{CKPT_ROOT}/unwx02xp/checkpoints/resume.ckpt",
+        build=lambda: MultiTaskSwinUNETR(in_channels=4, num_classes=4, feature_size=48),
+        suffix="",
+    ),
+    "base": dict(
+        ckpt=f"{CKPT_ROOT}/lvjmfekz/checkpoints/epoch=99-step=16200.ckpt",
+        build=lambda: BaseSwinUNETR(in_channels=4, out_channels=4, feature_size=48),
+        suffix="_base",
+    ),
+    "detach": dict(
+        ckpt=f"{CKPT_ROOT}/jnopa6kt/checkpoints/epoch=99-step=16200.ckpt",
+        build=lambda: MultiTaskSwinUNETRDetach(in_channels=4, num_classes=4, feature_size=48),
+        suffix="_detach",
+    ),
+}
+
+
 @hydra.main(version_base="1.3", config_path="../configs", config_name="train")
 def main(cfg: DictConfig):
-    CHECKPOINT_PATH = os.environ.get(
-        "CHECKPOINT_PATH", 
-        "/work/ab0995/a270263/mgr/logs/brats-mgr-project/unwx02xp/checkpoints/resume.ckpt"
-    )
-    
+    tag = os.environ.get("MODEL_TAG", "multitask")
+    if tag not in MODELS:
+        raise SystemExit(f"MODEL_TAG must be one of {list(MODELS)}, got '{tag}'")
+    spec = MODELS[tag]
+    CHECKPOINT_PATH = os.environ.get("CHECKPOINT_PATH", spec["ckpt"])
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Model     : {tag}")
     print(f"Started official lesion-wise evaluation on {device}")
     print(f"Using checkpoint: {CHECKPOINT_PATH}")
 
@@ -68,7 +96,7 @@ def main(cfg: DictConfig):
     val_loader = datamodule.val_dataloader()
 
     print("Loading model")
-    net = MultiTaskSwinUNETR(in_channels=4, num_classes=4, feature_size=48)
+    net = spec["build"]()
     model = BraTSLightningModule.load_from_checkpoint(CHECKPOINT_PATH, net=net, map_location=device)
     model.to(device)
     model.eval()
@@ -88,7 +116,7 @@ def main(cfg: DictConfig):
                 break
             images = batch["image"].to(device)
             labels = batch["seg"].to(device)
-            
+
             gt_filepath = batch["seg"].meta["filename_or_obj"][0] if hasattr(batch["seg"], "meta") else batch["seg_meta_dict"]["filename_or_obj"][0]
             patient_id = Path(gt_filepath).parent.name
             patient_count += 1
@@ -96,7 +124,7 @@ def main(cfg: DictConfig):
             def predictor_wrapper(x):
                 out = model.net(x)
                 return out[0] if isinstance(out, tuple) else out
-                
+
             logits = sliding_window_inference(
                 inputs=images,
                 roi_size=(96, 96, 96),
@@ -106,7 +134,7 @@ def main(cfg: DictConfig):
             )
 
             preds = [post_trans(i) for i in decollate_batch(logits)]
-            pred_mask = preds[0] # batch_size is 1 in val
+            pred_mask = preds[0]  # batch_size is 1 in val
 
             pred_np = pred_mask.squeeze().cpu().numpy().astype(np.int32)
             gt_np = labels.squeeze().cpu().numpy().astype(np.int32)
@@ -140,7 +168,7 @@ def main(cfg: DictConfig):
                     challenge_name="BraTS-GLI",
                     output=None
                 )
-                
+
                 results_df["patient_id"] = patient_id
                 patient_dfs.append(results_df)
 
@@ -152,7 +180,7 @@ def main(cfg: DictConfig):
                     os.remove(temp_pred_path)
                 if os.path.exists(temp_gt_path):
                     os.remove(temp_gt_path)
-                
+
                 # metrics_GLI.py leaves these behind as a side effect
                 if os.path.exists("./tmp_gt"):
                     shutil.rmtree("./tmp_gt")
@@ -161,27 +189,27 @@ def main(cfg: DictConfig):
 
     if len(patient_dfs) > 0:
         all_results = pd.concat(patient_dfs, ignore_index=True)
-        
-        suffix = ""
+
+        suffix = spec["suffix"]
         if limit > 0:
             suffix += f"_limit_{limit}"
         if POSTPROCESS_MIN_VOXELS > 0:
             suffix += f"_pp_{POSTPROCESS_MIN_VOXELS}"
-            
+
         raw_filename = f"official_lesionwise{suffix}_raw.csv"
         summary_filename = f"official_lesionwise{suffix}_summary.csv"
-        
+
         raw_output_path = os.path.join(project_root, "outputs", raw_filename)
         os.makedirs(os.path.dirname(raw_output_path), exist_ok=True)
         all_results.to_csv(raw_output_path, index=False)
         print(f"\nRaw results saved to {raw_output_path}")
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print("FINAL OFFICIAL LESION-WISE METRICS (BraTS 2024 GLI):")
-        print("="*50)
-        
+        print("=" * 50)
+
         brats_regions = ["WT", "TC", "ET"]
-        
+
         summary_rows = []
         for region in brats_regions:
             region_df = all_results[all_results["Labels"] == region]
@@ -190,14 +218,14 @@ def main(cfg: DictConfig):
                 mean_lhd95 = region_df["LesionWise_Score_HD95"].mean()
                 mean_lnsd05 = region_df["LesionWise_Score_NSD @ 0.5"].mean()
                 mean_lnsd10 = region_df["LesionWise_Score_NSD @ 1.0"].mean()
-                
+
                 print(f"Region: {region}")
                 print(f"  Lesion-wise Dice (L-Dice):        {mean_ldice:.4f}")
                 print(f"  Lesion-wise HD95 (L-HD95):        {mean_lhd95:.4f}")
                 print(f"  Lesion-wise NSD @ 0.5:           {mean_lnsd05:.4f}")
                 print(f"  Lesion-wise NSD @ 1.0:           {mean_lnsd10:.4f}")
                 print("-" * 50)
-                
+
                 summary_rows.append({
                     "Region": region,
                     "L-Dice": mean_ldice,
@@ -205,22 +233,23 @@ def main(cfg: DictConfig):
                     "L-NSD@0.5": mean_lnsd05,
                     "L-NSD@1.0": mean_lnsd10
                 })
-        
+
         if len(summary_rows) > 0:
             summary_df = pd.DataFrame(summary_rows)
             summary_output_path = os.path.join(project_root, "outputs", summary_filename)
             summary_df.to_csv(summary_output_path, index=False)
             print(f"Summary saved to {summary_output_path}")
-            
+
             avg_ldice = summary_df["L-Dice"].mean()
             avg_lhd95 = summary_df["L-HD95"].mean()
-            print(f"OVERALL AVERAGE:")
+            print("OVERALL AVERAGE:")
             print(f"  Mean L-Dice:                      {avg_ldice:.4f}")
             print(f"  Mean L-HD95:                      {avg_lhd95:.4f}")
-            
-        print("="*50)
+
+        print("=" * 50)
     else:
         print("No evaluation results were computed successfully.")
+
 
 if __name__ == "__main__":
     main()

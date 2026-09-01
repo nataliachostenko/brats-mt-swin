@@ -12,10 +12,10 @@ conda activate /work/ab0995/a270263/env/mri
 export LD_LIBRARY_PATH=/work/ab0995/a270263/env/mri/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=/work/ab0995/a270263/mgr
 
-export CHECKPOINT_PATH="/work/ab0995/a270263/mgr/logs/brats-mgr-project/jnopa6kt/checkpoints/epoch=99-step=16200.ckpt"
+export MODEL_TAG=detach
 export EVAL_LIMIT=0
 export POSTPROCESS_MIN_VOXELS=100
 
 mkdir -p /work/ab0995/a270263/mgr/scratch/run_detach_postprocess_full
 cd /work/ab0995/a270263/mgr/scratch/run_detach_postprocess_full
-python -u /work/ab0995/a270263/mgr/tools/eval_official_lesion_wise_detach.py model=swin_multitask_detach
+python -u /work/ab0995/a270263/mgr/tools/eval_official_lesion_wise.py

@@ -12,9 +12,9 @@ conda activate /work/ab0995/a270263/env/mri
 export LD_LIBRARY_PATH=/work/ab0995/a270263/env/mri/lib:$LD_LIBRARY_PATH
 export PYTHONPATH=/work/ab0995/a270263/mgr
 
-export CHECKPOINT_PATH="/work/ab0995/a270263/mgr/logs/brats-mgr-project/lvjmfekz/checkpoints/epoch=99-step=16200.ckpt"
+export MODEL_TAG=base
 
 mkdir -p /work/ab0995/a270263/mgr/scratch/run_base
 cd /work/ab0995/a270263/mgr/scratch/run_base
 
-python -u /work/ab0995/a270263/mgr/tools/eval_official_lesion_wise_base.py model=swin_base
+python -u /work/ab0995/a270263/mgr/tools/eval_official_lesion_wise.py
