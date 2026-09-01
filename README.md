@@ -12,20 +12,20 @@ that couples semantic segmentation of tumor substructures with classification of
 their presence via a Cross-Task Attention (CtA) module that feeds the
 classifier's features back into the segmentation decoder.
 
-
 <p align="center">
-  <img src="assets/demo.gif" width="700">
+  <img src="./assets/demo.gif" width="700">
 </p>
 
 Compared architectures:
-Purpose |
+
+| Architecture | Config | Purpose |
 |---|---|---|
 | **Swin-UNETR Base** | `model=swin_base` | Segmentation only baseline |
 | **Multi-task (standard)** | `model=swin_multitask` | Segmentation and classification, gradients flow freely between both heads |
 | **Multi-task (Detach)** | `model=swin_multitask_detach` | Same architecture, gradients between the classification head and CtA module are blocked to prevent the classification loss from destabilizing the shared encoder |
 
 The classification head predicts presence of three tumor substructures
-(NETC, SNFH, ET) per patch. IT IS NOT a malignancy grading task.
+(NETC, SNFH, ET) per patch. **It is not a malignancy grading task.**
 
 ## Installation
 
