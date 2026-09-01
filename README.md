@@ -113,6 +113,100 @@ remapping.
 ├── tests/
 └── train.py                # Hydra entrypoint
 ```
+## Evaluation
+
+All scripts below load a trained checkpoint from [Training](#training). `MODEL_TAG` selects the architecture (`multitask` is always the default); `CHECKPOINT_PATH` overrides the built-in checkpoint path per tag.
+
+### Official lesion-wise metrics (BraTS 2024)
+
+The metric used in the thesis, connected-component matching per the official
+BraTS challenge script (`tools/BraTS2024Metrics/`).
+
+```bash
+MODEL_TAG=multitask python tools/eval_official_lesion_wise.py   # default
+MODEL_TAG=base      python tools/eval_official_lesion_wise.py
+MODEL_TAG=detach    python tools/eval_official_lesion_wise.py
+
+# filter predicted components smaller than 100 voxels, full validation set
+POSTPROCESS_MIN_VOXELS=100 EVAL_LIMIT=0 MODEL_TAG=detach python tools/eval_official_lesion_wise.py
+```
+
+Writes
+
+```text
+outputs/official_lesionwise<_base|_detach><_pp_N>_{raw,summary}.csv
+```
+
+### Classification head
+
+```bash
+MODEL_TAG=multitask python tools/eval_classification.py
+MODEL_TAG=detach    python tools/eval_classification.py
+```
+
+`base` has no classification head.
+
+Reports MCC / AP / ROC-AUC at patch and volume level
+(`src/utils/cls_metrics.py`). `tools/report_classification.py` turns saved
+results into a CSV and LaTeX table.
+
+### Precision-recall curves
+
+```bash
+MODEL_TAG=multitask python tools/eval_pr_curves.py
+```
+
+Produces voxel-wise and lesion-wise precision-recall data
+(`src/utils/pr_metrics.py`), plotted by `tools/plot_pr_curves.py`.
+
+### Auxiliary voxel-wise and lesion-wise Dice, Precision, Recall
+
+Non-official metrics, always against the standard multi-task
+checkpoint unless overridden with `CHECKPOINT_PATH`:
+
+```bash
+python tools/eval_regions.py          # voxel-wise
+python tools/eval_regions_lesion.py   # lesion-wise 
+python tools/eval_pr_metrics.py       # voxel-wise Dice / Precision / Recall / PR-AUC
+```
+
+### Inference
+
+```bash
+python tools/predict.py
+python tools/predict_for_slicer.py BraTS-GLI-02139-101
+```
+
+`predict.py` runs inference for a single hardcoded case (see `__main__`).
+
+`predict_for_slicer.py` writes the outputs for a selected patient to
+
+```text
+slicer_cases/<PID>/
+```
+
+for visualization in 3D Slicer.
+
+### Environment variables
+
+| Variable | Used by | Meaning |
+|---|---|---|
+| `MODEL_TAG` | official / classification / PR-curve scripts | `multitask` (default) / `base` / `detach` |
+| `CHECKPOINT_PATH` | all evaluation and prediction scripts | override the built-in checkpoint for the selected tag |
+| `EVAL_LIMIT` | most evaluation scripts | evaluate only the first N patients |
+| `POSTPROCESS_MIN_VOXELS` | `eval_official_lesion_wise.py` | drop predicted components smaller than N voxels |
+| `PATCHES_PER_PATIENT` | `eval_classification.py` | patches sampled per patient during patch-level evaluation |
+
+### Cluster configs
+
+`scripts/` contains the SLURM launchers used to produce the thesis results. Some examples:
+
+```bash
+sbatch --export=ALL,MODEL_TAG=detach scripts/eval_official_lesion_wise_gpu_detach.sh
+sbatch --export=ALL,MODEL_TAG=multitask scripts/eval_classification_slurm.sh
+sbatch --export=ALL,MODEL_TAG=base scripts/eval_pr_curves_slurm.sh
+```
+
 
 ## License
 
