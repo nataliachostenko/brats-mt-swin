@@ -1,20 +1,27 @@
-#frameworks
+# frameworks
 torch>=2.0.0
-torchvision
-lightning>=2.1.0        
-monai[all]>=1.3.0      
+lightning>=2.1.0
+monai[all]>=1.3.0
 
-# MLOps and config 
-hydra-core>=1.3.0      
-omegaconf               
-wandb                  
+# MLOps and config
+hydra-core>=1.3.0
+omegaconf>=2.1.0
+wandb>=0.16.0
 
-# EDA
-numpy
-pandas
-matplotlib
-seaborn
-scikit-learn
-jupyterlab            
-ipywidgets
-flake8
+# scientific stack
+numpy>=1.26.0
+pandas>=2.0.0
+scipy>=1.12.0
+matplotlib>=3.5.0
+seaborn>=0.13.0
+scikit-learn>=1.3.0
+
+# model / official BraTS metric dependencies
+einops>=0.7.0
+nibabel>=5.0.1
+connected-components-3d>=3.12.1
+medpy>=0.5.2
+
+# dev
+flake8>=7.0.0
+pytest>=7.0.0
